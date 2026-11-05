@@ -9,6 +9,9 @@
 
 /* Calendrier des disponibilités */
 .availability-wrap{max-width:680px;margin:36px auto 22px;padding:28px;background:var(--cream);border:1px solid #e1d9c9;text-align:left;box-shadow:0 10px 35px rgba(32,63,52,.05)}.calendar-top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}.calendar-top h3{font-size:25px;font-weight:normal;margin:0;text-transform:capitalize}.calendar-arrow{background:transparent;border:1px solid #c9c6b8;color:var(--forest);width:42px;height:42px;font-size:22px;cursor:pointer}.calendar-arrow:disabled{opacity:.3;cursor:not-allowed}.calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}.calendar-dayname{text-align:center;font:12px Arial,sans-serif;color:#66736a;padding:9px 0}.calendar-day{min-height:56px;display:flex;align-items:center;justify-content:center;border:1px solid #e4dfd4;background:#fff;color:var(--forest);font:15px Arial,sans-serif}.calendar-day.empty{background:transparent;border-color:transparent}.calendar-day.occupied{background:#e6e4df;color:#8d8b85;text-decoration:line-through}.calendar-day.past{background:#f4f1eb;color:#b6b2a9}.calendar-day.unknown{background:#f4f1eb;color:#a6a59f}.calendar-legend{display:flex;flex-wrap:wrap;gap:20px;margin-top:20px;font:13px Arial,sans-serif;color:#53665b}.calendar-legend span{display:flex;align-items:center;gap:8px}.calendar-key{width:15px;height:15px;display:inline-block;border:1px solid #ded9cc;background:#fff}.calendar-key.occupied{background:#e6e4df}.calendar-key.unknown{background:#f4f1eb}.calendar-status{font:13px/1.6 Arial,sans-serif;color:#657168;margin-top:18px;min-height:20px}.calendar-status.error{color:#8b433b}.booking .copy{max-width:680px}.booking-note{max-width:670px;margin:20px auto 0}@media(max-width:600px){.availability-wrap{padding:15px}.calendar-day{min-height:44px}.calendar-grid{gap:4px}.calendar-top h3{font-size:21px}}
+
+/* Simulateur de séjour */
+.calendar-day.selectable{cursor:pointer}.calendar-day.selectable:hover{border-color:var(--gold);background:#faf0df}.calendar-day.selected{background:var(--forest);color:white;border-color:var(--forest)}.calendar-day.in-range{background:#e5ede6;border-color:#c5d6c8}.calendar-day.selectable:focus-visible{outline:3px solid var(--gold);outline-offset:2px}.calendar-day:disabled{cursor:default}.quote{margin-top:22px;border-top:1px solid #ded7c9;padding-top:20px;font:15px/1.7 Arial,sans-serif}.quote-instruction{color:#52645b}.quote-summary{display:flex;justify-content:space-between;gap:12px;margin:8px 0}.quote-total{border-top:1px solid #ded7c9;padding-top:13px;margin-top:13px;font-size:20px;font-weight:bold}.quote-error{color:#8b433b}.quote-reset{margin-top:14px;border:1px solid #9c9b8d;background:transparent;padding:9px 14px;color:var(--forest);cursor:pointer;font:13px Arial,sans-serif}
 </style>
 </head>
 <body>
@@ -20,24 +23,51 @@
 <section class="section"><div class="story-grid"><img src="images/6C8A7550.jpg" alt="Carpes koï dorées nageant dans l’étang" loading="lazy"><div><div class="section-label">Un étang vivant</div><h2 class="heading">Les carpes koï, voisines de votre séjour.</h2><p class="copy">Observez les carpes koï qui évoluent sous la surface, au milieu d’une biodiversité préservée. Une expérience de contemplation, au fil de l’eau.</p></div></div></section>
 <section class="section extras"><div class="section-label">Prolongez le plaisir</div><h2 class="heading">Les petits plus de votre escapade.</h2><div class="extras-grid"><article><img src="images/6C8A7804.jpg" alt="Petit-déjeuner servi face à l’étang" loading="lazy"><h3>Petit-déjeuner</h3><p>Commencez la journée avec une sélection de produits locaux, livrée pour votre séjour.</p></article><article><img src="images/Photo - 27.png" alt="Repas et barbecue sur la terrasse du lodge" loading="lazy"><h3>Planche gourmande</h3><p>Une planche à partager, à savourer sur la terrasse au rythme de l’étang.</p></article></div><p class="extras-note">Prestations additionnelles sur demande, selon disponibilité et tarifs en vigueur.</p></section>
 <section class="section gallery" id="photos"><div class="section-label">Quelques instants sur place</div><h2 class="heading">Imaginez-vous ici.</h2><div class="gallery-grid"><img src="images/PTSC_0007_20250722211941~2.JPG" alt="Vue aérienne de la cabane flottante" loading="lazy"><img src="images/6C8A7804.jpg" alt="Petit déjeuner face à l'étang" loading="lazy"><img src="images/6C8A7677.jpg" alt="Chambre éclairée à la tombée de la nuit" loading="lazy"><img src="images/6C8A7550.jpg" alt="Carpes koï dans l'étang" loading="lazy"><img src="images/Photo - 27.png" alt="Barbecue sur la terrasse" loading="lazy"></div><p class="image-caption">De vrais moments photographiés à GET OUT THERE.</p></section>
-<section class="section booking" id="reservation"><div class="section-label">Votre prochaine escapade</div><h2 class="heading">Choisissez votre moment.</h2><p class="copy">Explorez les nuits actuellement disponibles pour votre escapade sur l’étang. Les disponibilités sont indicatives et actualisées périodiquement.</p><div class="availability-wrap" aria-label="Calendrier des disponibilités"><div class="calendar-top"><button class="calendar-arrow" id="cal-prev" type="button" aria-label="Mois précédent">‹</button><h3 id="cal-month">Chargement…</h3><button class="calendar-arrow" id="cal-next" type="button" aria-label="Mois suivant">›</button></div><div class="calendar-grid" id="cal-grid" aria-live="polite"></div><div class="calendar-legend"><span><i class="calendar-key"></i>Nuit a priori libre</span><span><i class="calendar-key occupied"></i>Nuit occupée</span><span><i class="calendar-key unknown"></i>Hors période consultable</span></div><p class="calendar-status" id="cal-status" role="status">Chargement des disponibilités…</p></div><span class="button" style="opacity:.7;cursor:default" aria-label="Réservation bientôt disponible">Réservations en préparation</span><p class="booking-note">Aucune réservation ni paiement n'est encore possible sur ce site. Les disponibilités ne sont pas garanties en temps réel.</p></section>
+<section class="section booking" id="reservation"><div class="section-label">Votre prochaine escapade</div><h2 class="heading">Choisissez votre moment.</h2><p class="copy">Sélectionnez votre date d’arrivée puis votre date de départ pour estimer le prix de votre séjour. Les disponibilités restent indicatives.</p><div class="availability-wrap" aria-label="Calendrier des disponibilités"><div class="calendar-top"><button class="calendar-arrow" id="cal-prev" type="button" aria-label="Mois précédent">‹</button><h3 id="cal-month">Chargement…</h3><button class="calendar-arrow" id="cal-next" type="button" aria-label="Mois suivant">›</button></div><div class="calendar-grid" id="cal-grid" aria-live="polite"></div><div class="calendar-legend"><span><i class="calendar-key"></i>Nuit a priori libre</span><span><i class="calendar-key occupied"></i>Nuit occupée</span><span><i class="calendar-key unknown"></i>Hors période consultable</span></div><p class="calendar-status" id="cal-status" role="status">Chargement des disponibilités…</p><div class="quote" id="quote" aria-live="polite"><p class="quote-instruction">Chargement des tarifs…</p></div></div><span class="button" style="opacity:.7;cursor:default" aria-label="Réservation bientôt disponible">Réservations en préparation</span><p class="booking-note">Aucune réservation ni paiement n'est encore possible sur ce site. Les disponibilités ne sont pas garanties en temps réel.</p></section>
 </main><footer><strong>GET OUT THERE</strong><p>Cabane sur l'eau · Parcoul-Chenaud · Dordogne</p><p>Un séjour singulier, au rythme de la nature.</p></footer>
 
 <script>
 (function(){
   'use strict';
-  const API_URL = 'https://script.google.com/macros/s/AKfycbx6QID8HMdhKOlhUVWKX_e7NIR2S-agPUIZHiBYscnyFqRTPHeenPibkTTLa6dfej_J/exec';
-  const occupied = new Set();
-  const now = new Date();
-  const today = new Date(now.getFullYear(),now.getMonth(),now.getDate());
-  const end = new Date(today); end.setDate(end.getDate()+365);
-  let monthOffset=0, loaded=false;
+  const API_URL='https://script.google.com/macros/s/AKfycbx6QID8HMdhKOlhUVWKX_e7NIR2S-agPUIZHiBYscnyFqRTPHeenPibkTTLa6dfej_J/exec';
+  const occupied=new Set();
+  let prices={}, cleaning=null, loaded=false, monthOffset=0, arrival=null, departure=null;
+  const now=new Date();
+  const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const end=new Date(today);end.setDate(end.getDate()+365);
   const grid=document.getElementById('cal-grid');
   const title=document.getElementById('cal-month');
   const status=document.getElementById('cal-status');
   const prev=document.getElementById('cal-prev');
   const next=document.getElementById('cal-next');
+  const quote=document.getElementById('quote');
+  const money=n=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:2}).format(n);
+  const label=d=>new Intl.DateTimeFormat('fr-FR',{day:'numeric',month:'long',year:'numeric'}).format(d);
   function key(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+  function dateFromKey(k){const [y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d);}
+  function nextDay(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate()+1);}
+  function hasPrice(k){return Object.prototype.hasOwnProperty.call(prices,k)&&Number.isFinite(prices[k])&&prices[k]>=0;}
+  function canArrive(d){return loaded&&d>=today&&d<end&&!occupied.has(key(d))&&hasPrice(key(d));}
+  function canDepart(d){
+    if(!arrival||d<=arrival||d>end)return false;
+    for(let day=new Date(arrival);day<d;day=nextDay(day)){
+      if(day>=end||occupied.has(key(day))||!hasPrice(key(day)))return false;
+    }
+    return true;
+  }
+  function selectDate(d){
+    if(!arrival||departure){
+      if(!canArrive(d))return;
+      arrival=d;departure=null;
+    }else if(d.getTime()===arrival.getTime()){
+      arrival=null;
+    }else if(d>arrival&&canDepart(d)){
+      departure=d;
+    }else if(canArrive(d)){
+      arrival=d;departure=null;
+    }else{return;}
+    render();renderQuote();
+  }
   function render(){
     const first=new Date(today.getFullYear(),today.getMonth()+monthOffset,1);
     const days=new Date(first.getFullYear(),first.getMonth()+1,0).getDate();
@@ -46,31 +76,69 @@
     next.disabled=new Date(first.getFullYear(),first.getMonth()+1,1)>=end;
     grid.replaceChildren();
     ['L','M','M','J','V','S','D'].forEach(day=>{const el=document.createElement('div');el.className='calendar-dayname';el.textContent=day;grid.append(el);});
-    const blank=(first.getDay()+6)%7;
-    for(let i=0;i<blank;i++){const el=document.createElement('div');el.className='calendar-day empty';grid.append(el);}
+    for(let i=0;i<(first.getDay()+6)%7;i++){const el=document.createElement('div');el.className='calendar-day empty';grid.append(el);}
     for(let i=1;i<=days;i++){
-      const d=new Date(first.getFullYear(),first.getMonth(),i);
-      const el=document.createElement('div');el.className='calendar-day';el.textContent=i;
-      if(d<today) {el.classList.add('past');el.setAttribute('aria-label',i+' : date passée');}
-      else if(!loaded||d>=end){el.classList.add('unknown');el.setAttribute('aria-label',i+' : disponibilité non vérifiée');}
-      else if(occupied.has(key(d))){el.classList.add('occupied');el.setAttribute('aria-label',i+' : nuit occupée');}
-      else {el.setAttribute('aria-label',i+' : nuit a priori libre');}
+      const d=new Date(first.getFullYear(),first.getMonth(),i),k=key(d);
+      const isArrival=arrival&&d.getTime()===arrival.getTime();
+      const isDeparture=departure&&d.getTime()===departure.getTime();
+      const inRange=arrival&&departure&&d>arrival&&d<departure;
+      const valid=canArrive(d)||(arrival&&!departure&&canDepart(d));
+      const el=document.createElement('button');el.type='button';el.className='calendar-day';el.textContent=i;
+      if(d<today)el.classList.add('past');
+      else if(!loaded||d>=end||!hasPrice(k))el.classList.add('unknown');
+      else if(occupied.has(k))el.classList.add('occupied');
+      if(inRange)el.classList.add('in-range');
+      if(isArrival||isDeparture)el.classList.add('selected');
+      if(valid||isArrival){el.classList.add('selectable');el.addEventListener('click',()=>selectDate(d));}
+      else el.disabled=true;
+      const state=d<today?'date passée':!loaded?'chargement':d>=end?'hors période':occupied.has(k)?'nuit occupée':!hasPrice(k)?'tarif indisponible':'nuit a priori libre';
+      el.setAttribute('aria-label',label(d)+' : '+(isArrival?'arrivée sélectionnée':isDeparture?'départ sélectionné':state));
+      if(isArrival||isDeparture)el.setAttribute('aria-pressed','true');
       grid.append(el);
     }
+  }
+  function renderQuote(){
+    quote.replaceChildren();
+    const line=(className,text)=>{const p=document.createElement('p');p.className=className;p.textContent=text;quote.append(p);};
+    if(!loaded){line('quote-instruction','Chargement des disponibilités et des tarifs…');return;}
+    if(!arrival){line('quote-instruction','Cliquez sur une date libre pour choisir votre arrivée.');return;}
+    if(!departure){line('quote-instruction','Arrivée le '+label(arrival)+'. Sélectionnez maintenant la date de départ (elle peut être dans le mois suivant).');}
+    else{
+      let nights=0,subtotal=0;
+      for(let d=new Date(arrival);d<departure;d=nextDay(d)){
+        if(occupied.has(key(d))||!hasPrice(key(d))){line('quote-error','Impossible de calculer ce séjour : une nuit est indisponible ou sans tarif.');return;}
+        subtotal+=prices[key(d)];nights++;
+      }
+      line('quote-instruction','Du '+label(arrival)+' au '+label(departure));
+      line('quote-summary',nights+' nuit'+(nights>1?'s':'')+' : '+money(subtotal));
+      line('quote-summary','Ménage et linge (une fois) : '+money(cleaning));
+      line('quote-total','Total estimé : '+money(subtotal+cleaning));
+      line('quote-instruction','Estimation indicative, sans réservation ni paiement.');
+    }
+    const reset=document.createElement('button');reset.type='button';reset.className='quote-reset';reset.textContent='Effacer les dates';
+    reset.addEventListener('click',()=>{arrival=null;departure=null;render();renderQuote();});quote.append(reset);
   }
   prev.addEventListener('click',()=>{if(monthOffset>0){monthOffset--;render();}});
   next.addEventListener('click',()=>{const first=new Date(today.getFullYear(),today.getMonth()+monthOffset+1,1);if(first<end){monthOffset++;render();}});
   window.gotAvailabilityCallback=function(data){
-    if(!data||!Array.isArray(data.nuitsOccupees)){status.textContent='Réponse de disponibilités invalide.';status.classList.add('error');return;}
+    if(!data||!Array.isArray(data.nuitsOccupees)){
+      status.textContent='Réponse de disponibilités invalide.';status.classList.add('error');return;
+    }
+    if(!data.tarifs||typeof data.tarifs!=='object'||Array.isArray(data.tarifs)||!Number.isFinite(data.fraisMenage)||data.fraisMenage<0){
+      status.textContent='Tarifs indisponibles : vérifier le déploiement Google Apps Script.';status.classList.add('error');
+      quote.textContent='Le simulateur est temporairement indisponible.';return;
+    }
     data.nuitsOccupees.forEach(v=>{if(typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v))occupied.add(v);});
-    loaded=true;status.textContent='Disponibilités indicatives · synchronisation environ toutes les 15 minutes.';render();
+    prices=data.tarifs;cleaning=data.fraisMenage;loaded=true;
+    status.textContent='Disponibilités indicatives · synchronisation environ toutes les 15 minutes.';
+    render();renderQuote();
   };
-  render();
+  render();renderQuote();
   const script=document.createElement('script');
   script.src=API_URL+'?callback=gotAvailabilityCallback';
-  script.onerror=function(){status.textContent='Calendrier temporairement indisponible. Réessayez plus tard.';status.classList.add('error');};
+  script.onerror=function(){status.textContent='Calendrier temporairement indisponible. Réessayez plus tard.';status.classList.add('error');quote.textContent='Simulateur indisponible.';};
   document.body.append(script);
-  setTimeout(function(){if(!loaded&&!status.classList.contains('error')){status.textContent='Chargement impossible pour le moment. Les dates ne sont pas vérifiées.';status.classList.add('error');}},12000);
+  setTimeout(function(){if(!loaded&&!status.classList.contains('error')){status.textContent='Chargement impossible pour le moment. Les dates ne sont pas vérifiées.';status.classList.add('error');quote.textContent='Simulateur indisponible.';}},12000);
 })();
 </script>
 </body></html>
