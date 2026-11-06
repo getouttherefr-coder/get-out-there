@@ -175,6 +175,31 @@ footer{padding:85px 24px 65px}footer strong{font-size:clamp(28px,4vw,50px)}
 .place-card>.place-number,.place-card>h3,.place-card>p,.place-card>.place-drive,.place-card>a{margin-left:clamp(20px,2.5vw,30px);margin-right:clamp(20px,2.5vw,30px)}
 .place-card>a:last-child{margin-bottom:28px}
 @media(max-width:600px){.place-photo img{height:240px}}
+</style><style>
+/* V16 — témoignages plus profonds et escapades en composition éditoriale */
+.guest-reviews{background:#263d35;color:#f7f2e7}
+.guest-reviews>.section-label{color:#d7ae76}
+.guest-reviews>.heading{color:#fffaf0}
+.guest-reviews .reviews-intro{color:#d7e0d8}
+.guest-reviews .reviews-toolbar>span{color:#c8d5cc}
+.guest-reviews .reviews-arrow{border-color:#aab9ad;color:#f9f4e9}
+.guest-reviews .reviews-arrow:hover{background:#f9f4e9;color:#263d35}
+.guest-reviews .reviews-note{color:#c8d5cc}
+.guest-reviews .reviews-track{scrollbar-color:#aab9ad transparent}
+.places-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+.place-card{display:grid;grid-template-columns:46% minmax(0,1fr);grid-template-rows:auto auto 1fr auto auto;column-gap:0;align-items:start;min-height:310px;background:#fffdf7}
+.place-photo{grid-column:1;grid-row:1 / 6;margin:0;height:100%;display:flex;flex-direction:column;overflow:hidden}
+.place-photo img{height:100%;min-height:300px;flex:1;object-fit:cover}
+.place-photo figcaption{font:9px/1.35 Arial,sans-serif;padding:6px 9px;background:#f1eee6}
+.place-photo figcaption a{font-size:9px;text-transform:none;letter-spacing:normal}
+.place-card>.place-number{grid-column:2;margin-top:24px}
+.place-card>h3{grid-column:2;margin-top:12px;margin-bottom:9px;font-size:clamp(23px,2.2vw,31px)}
+.place-card>p{grid-column:2;margin-top:0;margin-bottom:12px;font-size:14px;line-height:1.65}
+.place-card>.place-drive{grid-column:2;margin-top:6px}
+.place-card>a:last-child{grid-column:2;margin-top:16px;margin-bottom:23px}
+@media(min-width:1050px){.place-card:last-child{grid-column:1/-1;grid-template-columns:40% minmax(0,1fr);min-height:270px}.place-card:last-child .place-photo img{min-height:270px}}
+@media(max-width:1049px){.places-grid{grid-template-columns:1fr}.place-card{grid-template-columns:42% minmax(0,1fr)}.place-photo img{min-height:270px}}
+@media(max-width:560px){.place-card{grid-template-columns:40% minmax(0,1fr);min-height:260px}.place-photo img{min-height:260px}.place-card>.place-number,.place-card>h3,.place-card>p,.place-card>.place-drive,.place-card>a{margin-left:14px;margin-right:12px}.place-card>.place-number{margin-top:15px;font-size:10px}.place-card>h3{font-size:21px}.place-card>p{font-size:12px;line-height:1.55}.place-card>.place-drive,.place-card>a:last-child{font-size:10px}.place-photo figcaption,.place-photo figcaption a{font-size:8px}}
 </style></head>
 <body>
 <header><a class="brand" href="#accueil">GET OUT THERE</a><nav><a href="#concept">Le concept</a><a href="#experience">Expérience</a><a href="#alentours">Aux alentours</a><a href="#avis">Avis</a><a class="nav-cta" href="#reservation">Réserver</a></nav></header>
