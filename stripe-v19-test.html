@@ -241,6 +241,11 @@ Pour les personnes sensibles au mal de mer, rassurez-vous : le lodge bouge très
   let sending=false;
   let uncertainSubmission=false;
   const PAYMENTS_API='https://get-out-there-payments.getouttherefr.workers.dev';
+  if(new URLSearchParams(window.location.search).get('payment')==='cancel'){
+    requestFeedback.hidden=false;
+    requestFeedback.className='request-feedback error';
+    requestFeedback.textContent='Paiement abandonné : votre réservation n’est pas confirmée. Vous pouvez sélectionner de nouvelles dates et recommencer.';
+  }
   const EXTRA_BREAKFAST=12, EXTRA_BOARD=24, EXTRA_WINE=15, TOURIST_TAX=1.90;
   const requestSelections=()=>new FormData(requestForm);
   const countField=name=>Number(requestForm.elements[name].value)||0;
