@@ -240,7 +240,7 @@ Pour les personnes sensibles au mal de mer, rassurez-vous : le lodge bouge très
   const submitButton=requestForm.querySelector('[type=submit]');
   let sending=false;
   let uncertainSubmission=false;
-  const PAYMENTS_API='https://get-out-there-payments.getouttherefr.workers.dev';
+  const PAYMENTS_API='https://get-out-there-payments-live.getouttherefr.workers.dev';
   if(new URLSearchParams(window.location.search).get('payment')==='cancel'){
     document.getElementById('payment-cancel-notice').hidden=false;
   }
