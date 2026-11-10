@@ -4,6 +4,12 @@
 <style>
 :root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#203f34;background:#f5f3eb}*{box-sizing:border-box}body{margin:0}main{max-width:1050px;margin:45px auto;padding:0 20px 80px}h1{font:normal clamp(32px,5vw,55px) Georgia,serif;margin:4px 0 8px}h2{font:normal 26px Georgia,serif}p{line-height:1.5}.sub{color:#61756a}.panel{padding:26px;background:white;border:1px solid #dadfd5;border-radius:12px;margin-top:20px;box-shadow:0 9px 25px #203f340c}label{display:block;font-weight:650;font-size:14px;margin:14px 0 6px}input,select,textarea{padding:12px;border:1px solid #a8b6ad;border-radius:7px;font:inherit;width:100%;color:#203f34;background:white}textarea{min-height:70px;resize:vertical}button{font:600 14px system-ui;padding:12px 18px;border:0;border-radius:8px;background:#264c3d;color:#fff;cursor:pointer}button.secondary{background:#e8eee8;color:#203f34}button.danger{background:#8b4136}button:disabled{opacity:.4;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #cca053}button+button{margin-left:8px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.list{display:grid;gap:9px}.item{display:flex;gap:12px;justify-content:space-between;align-items:center;border:1px solid #dce2da;padding:13px;border-radius:8px}.tag{font-size:11px;border-radius:20px;padding:5px 9px;background:#ecedea}.error{color:#8b3028}.ok{color:#236a49}.warning{background:#fff4e5;padding:16px;border-left:4px solid #c48e30}#status{min-height:28px;white-space:pre-wrap}.hidden{display:none!important}code{overflow-wrap:anywhere;font-size:12px}.count{color:#637b6f;font-size:13px}hr{border:0;border-top:1px solid #e3e5df;margin:20px 0}@media(max-width:700px){.grid{grid-template-columns:1fr}.item{align-items:stretch;flex-direction:column}.panel{padding:18px}}
 details{margin-top:13px;padding:15px;border:1px solid #dce2da;border-radius:9px;background:#fcfcf9}summary{cursor:pointer;font-size:16px;padding:3px 0}details[open]>summary{margin-bottom:14px}#v21CreateSection>h3{font:normal 26px Georgia,serif;color:#203f34}#v21Rows .item{gap:16px}#v21Rows .item strong{font-size:15px}#v21Rows .item .count{margin-top:5px;line-height:1.6}.search-grid{margin-bottom:15px}.result-count{font-size:13px;color:#61756a}#v21Status{white-space:pre-wrap}button.secondary{margin:3px}#v21Blocks:empty:after{content:"Aucun blocage actif";color:#61756a}#v21Rows:empty:after{content:"Aucune réservation à venir pour ce filtre";color:#61756a}@media(max-width:700px){main{padding:0 12px 60px;margin-top:20px}}
+
+/* V21.1 — Mise en évidence des conflits critiques */
+.v21-conflict-banner{padding:15px 18px;margin:12px 0 16px;border:2px solid #bd2026;background:#fff0f0;color:#8d151c;border-radius:9px;font:800 15px/1.45 Arial,sans-serif}
+#v21Rows .item.v21-conflict-card{border:3px solid #bf252b;background:#fff1f1;box-shadow:0 0 0 3px rgba(191,37,43,.08)}
+#v21Rows .item.v21-conflict-card strong{color:#8b131a;font-weight:900}
+.v21-conflict-label{margin-top:9px;color:#ae1019;font:800 13px/1.5 Arial,sans-serif}
 </style></head><body><main>
 <p class="sub">GET OUT THERE · Administration privée</p><h1>Gestion des réservations</h1>
 <p class="sub">Annulations et remboursements réels Stripe LIVE. Aucun secret n'est enregistré dans le navigateur.</p>
@@ -167,22 +173,46 @@ function v21RenderBookings(){
  }
  for(const x of g){
   const id=String(x.id||''),canonical=id.replace(/^(SITE|DIRECT)-/,'');
-  if(x.departure<=today||!v21IsActive(x.status)||seen.has(canonical))continue;
+  if(x.departure<=today||!v21IsActive(x.status)||(canonical&&seen.has(canonical)))continue;
   const channel=String(x.channel||'').toUpperCase();
   // Ne pas présenter une demande de paiement en attente comme une réservation confirmée.
   const valid=String(x.status||'').toUpperCase();
   if(channel.includes('SITE') && /EN_ATTENTE|PENDING|REFUSED|FAILED/.test(valid))continue;
   const kind=channel.includes('STRIPE')||/^SITE-?[0-9a-f]{8}-/i.test(id)?'stripe':'external';
-  booked.push({...x,kind,channel:channel||'DIRECT'});seen.add(canonical);
+  booked.push({...x,kind,channel:channel||'DIRECT'});if(canonical)seen.add(canonical);
  }
+  // Détecte les conflits avant filtrage : statuts explicites et chevauchements entre séjours distincts.
+  // Les dates de départ sont exclusives : un départ le 12 et une arrivée le 12 ne se chevauchent pas.
+  for(const x of booked){
+   x.v21Conflict=/CONFLIT|CONFLICT/i.test(String(x.status||''));
+   x.v21ConflictPeers=[];
+  }
+  for(let i=0;i<booked.length;i++)for(let j=i+1;j<booked.length;j++){
+   const a=booked[i],b=booked[j];
+   if(a.arrival<b.departure && b.arrival<a.departure){
+    // Une copie de la même réservation peut remonter de Stripe ET de Google : ne pas la compter deux fois.
+    const ia=String(a.id||'').replace(/^(SITE|DIRECT)-/,'');
+    const ib=String(b.id||'').replace(/^(SITE|DIRECT)-/,'');
+    if(ia&&ib&&ia===ib)continue;
+    a.v21Conflict=true;b.v21Conflict=true;
+    a.v21ConflictPeers.push((b.name||'Sans nom')+' ('+b.arrival+' → '+b.departure+')');
+    b.v21ConflictPeers.push((a.name||'Sans nom')+' ('+a.arrival+' → '+a.departure+')');
+   }
+  }
  booked.sort((a,b)=>a.arrival.localeCompare(b.arrival)||a.departure.localeCompare(b.departure)||String(a.name).localeCompare(String(b.name),'fr'));
  const selected=booked.filter(x=>{
   if(date && !(x.arrival<=date&&date<x.departure))return false;
   const iso=v21DateTerm(term);const fields=[x.name,x.channel,x.id,x.arrival,x.departure,String(x.arrival||'').split('-').reverse().join('/'),String(x.departure||'').split('-').reverse().join('/'),x.email];
   return !term||fields.some(v=>v21Normal(v).includes(term))||fields.some(v=>v21Normal(v).includes(v21Normal(iso)));
  });
- for(const x of selected){
-  const actions=[];
+  const allConflicts=booked.filter(x=>x.v21Conflict);
+  if(allConflicts.length){
+   const warning=document.createElement('div');warning.className='v21-conflict-banner';warning.setAttribute('role','alert');
+   warning.textContent='⚠ ATTENTION : '+allConflicts.length+' réservation(s) en conflit ou chevauchement. Vérifier les dates et les voyageurs avant toute intervention.';
+   root.append(warning);
+  }
+  for(const x of selected){
+   const actions=[];
   if(x.kind==='stripe' && /^[0-9a-f-]{36}$/i.test(String(x.id).replace(/^SITE-/,'')))actions.push({text:'Ouvrir / annuler',fn:()=>run(()=>open(String(x.id).replace(/^SITE-/,'')))});
   if(x.kind==='offline'){
    if(x.status==='OFFLINE_PENDING')actions.push({text:'Reprendre création',fn:()=>v21Run('/admin/v21-resume-offline',{id:x.id},'Réservation enregistrée')});
@@ -197,7 +227,15 @@ function v21RenderBookings(){
   }
   const label=(x.name||'Nom non renseigné')+' · '+x.channel;
   const sub=x.arrival+' → '+x.departure+' · '+x.status+(x.email?' · '+x.email:'')+' · Réf. '+x.id;
-  v21Line(root,label,sub,actions);
+   v21Line(root,label,sub,actions);
+   const card=root.lastElementChild;
+   if(x.v21Conflict){
+    card.classList.add('v21-conflict-card');
+    const warning=document.createElement('div');warning.className='v21-conflict-label';
+    warning.textContent='⚠ CONFLIT DE RÉSERVATION'+(x.v21ConflictPeers.length?' — Chevauchement avec '+x.v21ConflictPeers.join(' ; '):' — Statut signalé comme conflit');
+    card.firstElementChild.append(warning);
+   }
+
  }
  const counter=document.createElement('p');counter.className='result-count';counter.textContent=selected.length+' réservation(s) à venir affichée(s) sur '+booked.length;root.prepend(counter);
 }
