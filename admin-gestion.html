@@ -18,6 +18,40 @@
 <button class="danger" id="cancel">Confirmer l'annulation et le remboursement</button></div>
 <div id="resumeBox" class="hidden"><p class="warning">Annulation commencée, potentiellement incomplète. NE PAS modifier les dates manuellement dans Google ou D1.</p><button id="resume">Reprendre l'annulation sans doubler le remboursement</button></div>
 </section>
+<section class="panel hidden" id="v21Panel">
+ <h2>Gestion multicanal V21</h2>
+ <p class="sub">Airbnb et GreenGo : import Gmail conservé. Les réservations Stripe gardent la fonction d'annulation V20 ci-dessus.</p>
+ <button class="secondary" id="v21Refresh">Actualiser toutes les réservations</button>
+ <p id="v21Status" role="status"></p>
+ <h3>Synchronisation iCal</h3><div id="v21Sync" class="list"></div>
+ <h3>Réservations Airbnb, GreenGo et hors ligne</h3><div id="v21Rows" class="list"></div>
+ <h3>Blocages manuels</h3><div id="v21Blocks" class="list"></div>
+ <hr>
+ <h3>Créer une réservation directe hors ligne</h3>
+ <div class="grid">
+  <div><label>Arrivée</label><input type="date" id="v21Arrival"></div>
+  <div><label>Départ</label><input type="date" id="v21Departure"></div>
+  <div><label>Nom du client</label><input id="v21Name" maxlength="110"></div>
+  <div><label>Email (facultatif, pas d'email automatique)</label><input type="email" id="v21Email"></div>
+  <div><label>Téléphone (facultatif)</label><input type="tel" id="v21Phone"></div>
+  <div><label>Adultes</label><input type="number" id="v21Adults" min="1" max="4" value="2"></div>
+  <div><label>Enfants</label><input type="number" id="v21Children" min="0" max="4" value="0"></div>
+  <div><label>Bébés</label><input type="number" id="v21Babies" min="0" max="4" value="0"></div>
+  <div><label>Petits-déjeuners (quantité totale)</label><input type="number" id="v21Breakfast" min="0" value="0"></div>
+  <div><label>Apéritif</label><select id="v21Aperitif"><option value="none">Aucun</option><option value="board">Planche</option><option value="board_wine">Planche et vin</option></select></div>
+  <div><label>Responsable accueil</label><select id="v21CheckinOwner"><option>NC</option><option>Nico</option><option>Maud</option><option>Mel</option></select></div>
+  <div><label>Responsable ménage</label><select id="v21CleaningOwner"><option>NC</option><option>Nico</option><option>Maud</option><option>Mel</option></select></div>
+ </div>
+ <label>Note interne</label><textarea id="v21Note"></textarea>
+ <button id="v21CreateOffline">Créer et bloquer les nuits</button>
+ <hr>
+ <h3>Bloquer des dates (entretien, fermeture)</h3>
+ <div class="grid"><div><label>Arrivée du blocage</label><input type="date" id="v21BlockArrival"></div>
+ <div><label>Fin du blocage (date libérée)</label><input type="date" id="v21BlockDeparture"></div></div>
+ <label>Motif</label><input id="v21BlockReason" maxlength="250">
+ <p><button class="secondary" id="v21CreateBlock">Créer le blocage</button></p>
+</section>
+
 <script>
 'use strict';
 const API='https://get-out-there-payments-live.getouttherefr.workers.dev';
@@ -52,8 +86,8 @@ async function open(id){const data=await call('/admin/preview?id='+encodeURIComp
 function refundCents(){const total=current.payment.amount_cents;const mode=$('mode').value;if(mode==='full')return total;if(mode==='none')return 0;
  const input=$('partial').value.trim().replace(',','.');if(!/^\d+(?:\.\d{1,2})?$/.test(input))throw Error('Montant partiel invalide.');
  const cents=Math.round(Number(input)*100);if(cents<=0||cents>=total)throw Error('Le remboursement partiel doit être supérieur à 0 et inférieur au prix payé.');return cents;}
-$('connect').onclick=()=>run(async()=>{token=$('token').value.trim();await load();$('token').value='';});
-$('forget').onclick=()=>{token='';current=null;$('token').value='';show('bookingsPanel',false);show('detailPanel',false);status('Jeton effacé de cette page.');};
+$('connect').onclick=()=>run(async()=>{token=$('token').value.trim();await load();await v21Load();$('token').value='';});
+$('forget').onclick=()=>{token='';current=null;$('token').value='';show('bookingsPanel',false);show('detailPanel',false);show('v21Panel',false);status('Jeton effacé de cette page.');};
 $('openManual').onclick=()=>run(()=>open($('manualId').value.trim()));
 $('mode').onchange=()=>show('partialBox',$('mode').value==='partial');
 $('cancel').onclick=()=>run(async()=>{
@@ -72,4 +106,64 @@ $('resume').onclick=()=>run(async()=>{if(!current)throw Error('Réservation intr
  status('Annulation finalisée. Notifications : '+JSON.stringify(result.notices),'ok');
 });
 window.addEventListener('pagehide',()=>{token='';});
+// V21 — réutilise le jeton d'authentification privé du V20, sans stockage local.
+const v21$=id=>document.getElementById(id);
+function v21Line(target,head,sub,actions=[]){
+ const item=document.createElement('div');item.className='item';
+ const left=document.createElement('div');const title=document.createElement('strong');title.textContent=head;
+ const info=document.createElement('div');info.className='count';info.textContent=sub;
+ left.append(title,info);item.append(left);
+ const right=document.createElement('div');for(const a of actions){const b=document.createElement('button');b.className=a.danger?'danger':'secondary';b.textContent=a.text;b.onclick=a.fn;right.append(b);}
+ item.append(right);target.append(item);
+}
+async function v21Run(path,body,successMessage){
+ if(busy)return;block(true);v21$('v21Status').textContent='Opération en cours…';
+ try{const r=await call(path,'POST',body);v21$('v21Status').textContent=successMessage||('Opération réussie : '+JSON.stringify(r));await v21Load();}
+ catch(e){v21$('v21Status').textContent='ÉCHEC : '+e.message+'. Ne relance pas sans vérifier les statuts ci-dessous.';}
+ finally{block(false);}
+}
+async function v21Load(){
+ if(!token)return;
+ const data=await call('/admin/v21-list');v21$('v21Panel').classList.remove('hidden');
+ const rows=v21$('v21Rows'),blocks=v21$('v21Blocks'),sync=v21$('v21Sync');rows.replaceChildren();blocks.replaceChildren();sync.replaceChildren();
+ for(const x of data.sync||[]){const fresh=x.last_success&&Math.floor(Date.now()/1000)-x.last_success<3600;
+  v21Line(sync,x.channel+' — '+(fresh?'Synchronisé':'À vérifier'),(x.last_error||'Dernière réussite : '+(x.last_success?new Date(x.last_success*1000).toLocaleString('fr-FR'):'jamais'))+' · '+x.event_count+' événements');}
+ for(const x of data.google||[]){
+  const channel=String(x.channel||'').toUpperCase(),isGreenGo=channel==='GREENGO',isOldDirect=channel==='DIRECT';
+  const eligible=(isGreenGo||isOldDirect)&&x.nightId&&String(x.status||'').startsWith('OK');
+  const action=eligible?[{text:'Annuler (sans remboursement)',danger:true,fn:()=>{
+    if(confirm('La réservation a-t-elle bien été annulée sur '+channel+' ?\n'+x.name+' '+x.arrival+' → '+x.departure)){
+      const reason=prompt('Motif de l’annulation (obligatoire)');if(reason?.trim())v21Run('/admin/v21-cancel-external',{channel,name:x.name,arrival:x.arrival,departure:x.departure,nightId:x.nightId,reason:reason.trim()},'Annulation '+channel+' enregistrée');}
+  }}]:[];
+  v21Line(rows,x.channel+' · '+x.name,x.arrival+' → '+x.departure+' · '+x.status,action);
+ }
+ for(const x of data.offline||[]){
+  let info={};try{info=JSON.parse(x.payload||'{}');}catch(e){}
+  const actions=[];
+  if(x.status==='OFFLINE_PENDING')actions.push({text:'Reprendre création',fn:()=>v21Run('/admin/v21-resume-offline',{id:x.id},'Réservation enregistrée')});
+  if(['OFFLINE_CONFIRMED','OFFLINE_CANCEL_PENDING'].includes(x.status))actions.push({text:'Annuler sans remboursement',danger:true,fn:()=>{
+   if(confirm('Annuler définitivement la réservation hors ligne '+x.id+' ?'))v21Run('/admin/v21-cancel-offline',{id:x.id},'Annulation terminée');}});
+  v21Line(rows,'DIRECT OFFLINE · '+(info.name||x.id),x.arrival+' → '+x.departure+' · '+x.status+(x.last_error?' · '+x.last_error:''),actions);
+ }
+ for(const x of data.blocks||[]){const actions=[];
+  if(['PENDING','ERROR'].includes(x.state))actions.push({text:'Reprendre',fn:()=>v21Run('/admin/v21-resume-block',{id:x.id},'Blocage terminé')});
+  if(['ACTIVE','CANCEL_PENDING','ERROR'].includes(x.state))actions.push({text:'Retirer',danger:true,fn:()=>{if(confirm('Retirer ce blocage de disponibilité ?'))v21Run('/admin/v21-cancel-block',{id:x.id},'Blocage supprimé');}});
+  v21Line(blocks,x.reason,x.arrival+' → '+x.departure+' · '+x.state+(x.last_error?' · '+x.last_error:''),actions);
+ }
+}
+v21$('v21Refresh').onclick=()=>run(v21Load);
+v21$('v21CreateOffline').onclick=()=>{
+ const id=s=>v21$(s).value;
+ const b={arrival:id('v21Arrival'),departure:id('v21Departure'),name:id('v21Name'),email:id('v21Email'),phone:id('v21Phone'),adults:Number(id('v21Adults')),
+  children:Number(id('v21Children')),babies:Number(id('v21Babies')),breakfastCount:Number(id('v21Breakfast')),aperitif:id('v21Aperitif'),
+  checkinOwner:id('v21CheckinOwner'),cleaningOwner:id('v21CleaningOwner'),note:id('v21Note')};
+ if(!confirm('Créer cette réservation hors ligne, sans paiement Stripe et sans email automatique ?'))return;
+ v21Run('/admin/v21-create-offline',b,'Réservation créée et dates bloquées');
+};
+v21$('v21CreateBlock').onclick=()=>{
+ const b={arrival:v21$('v21BlockArrival').value,departure:v21$('v21BlockDeparture').value,reason:v21$('v21BlockReason').value};
+ if(!confirm('Bloquer ces dates sur le site et dans le calendrier iCal exporté ?'))return;
+ v21Run('/admin/v21-create-block',b,'Blocage créé');
+};
+
 </script></main></body></html>
