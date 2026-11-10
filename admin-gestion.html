@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive"><title>GET OUT THERE — Gestion des réservations</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#203f34;background:#f5f3eb}*{box-sizing:border-box}body{margin:0}main{max-width:1050px;margin:45px auto;padding:0 20px 80px}h1{font:normal clamp(32px,5vw,55px) Georgia,serif;margin:4px 0 8px}h2{font:normal 26px Georgia,serif}p{line-height:1.5}.sub{color:#61756a}.panel{padding:26px;background:white;border:1px solid #dadfd5;border-radius:12px;margin-top:20px;box-shadow:0 9px 25px #203f340c}label{display:block;font-weight:650;font-size:14px;margin:14px 0 6px}input,select,textarea{padding:12px;border:1px solid #a8b6ad;border-radius:7px;font:inherit;width:100%;color:#203f34;background:white}textarea{min-height:70px;resize:vertical}button{font:600 14px system-ui;padding:12px 18px;border:0;border-radius:8px;background:#264c3d;color:#fff;cursor:pointer}button.secondary{background:#e8eee8;color:#203f34}button.danger{background:#8b4136}button:disabled{opacity:.4;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #cca053}button+button{margin-left:8px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.list{display:grid;gap:9px}.item{display:flex;gap:12px;justify-content:space-between;align-items:center;border:1px solid #dce2da;padding:13px;border-radius:8px}.tag{font-size:11px;border-radius:20px;padding:5px 9px;background:#ecedea}.error{color:#8b3028}.ok{color:#236a49}.warning{background:#fff4e5;padding:16px;border-left:4px solid #c48e30}#status{min-height:28px;white-space:pre-wrap}.hidden{display:none!important}code{overflow-wrap:anywhere;font-size:12px}.count{color:#637b6f;font-size:13px}hr{border:0;border-top:1px solid #e3e5df;margin:20px 0}@media(max-width:700px){.grid{grid-template-columns:1fr}.item{align-items:stretch;flex-direction:column}.panel{padding:18px}}
+</style></head><body><main>
+<p class="sub">GET OUT THERE · Administration privée</p><h1>Gestion des réservations</h1>
+<p class="sub">Annulations et remboursements réels Stripe LIVE. Aucun secret n'est enregistré dans le navigateur.</p>
+<div class="panel"><label for="token">Jeton administrateur Cloudflare (GOT_ADMIN_TOKEN)</label><input type="password" id="token" autocomplete="off" placeholder="Colle ici ton secret administrateur"><p class="sub">Cette page est publique en lecture, mais l'API exige le jeton secret pour chaque opération. Ne partage pas le jeton.</p>
+<button id="connect">Afficher les réservations</button> <button class="secondary" id="forget">Effacer le jeton</button></div>
+<p id="status" role="status" aria-live="polite"></p>
+<section class="panel hidden" id="bookingsPanel"><h2>Réservations Stripe récentes</h2><p class="sub">40 dernières sessions Stripe. Pour une réservation ancienne, utilise sa référence D1 ci-dessous.</p><div class="list" id="bookings"></div><hr><label for="manualId">Référence d'une réservation</label><input id="manualId" placeholder="UUID de réservation"><button class="secondary" id="openManual">Afficher les détails</button></section>
+<section class="panel hidden" id="detailPanel"><h2>Réservation sélectionnée</h2><div id="details"></div><div id="cancelForm" class="hidden"><hr><h2>Annuler la réservation</h2><div class="warning"><strong>Opération réelle et irréversible.</strong> Les nuits resteront bloquées en cas de panne. L'annulation ne peut pas être effectuée deux fois.</div>
+<label for="mode">Décision de remboursement</label><select id="mode"><option value="full">Remboursement intégral</option><option value="partial">Remboursement partiel</option><option value="none">Annulation sans remboursement</option></select>
+<div id="partialBox" class="hidden"><label for="partial">Montant du remboursement en euros (ex. 50,00)</label><input type="text" inputmode="decimal" id="partial" placeholder="50,00"></div>
+<label for="reason">Motif interne (obligatoire)</label><textarea id="reason" maxlength="400" placeholder="Annulation à la demande du client, test de validation…"></textarea>
+<label for="confirmId">Retape l'identifiant complet de la réservation pour confirmer</label><input id="confirmId" autocomplete="off" spellcheck="false" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+<button class="danger" id="cancel">Confirmer l'annulation et le remboursement</button></div>
+<div id="resumeBox" class="hidden"><p class="warning">Annulation commencée, potentiellement incomplète. NE PAS modifier les dates manuellement dans Google ou D1.</p><button id="resume">Reprendre l'annulation sans doubler le remboursement</button></div>
+</section>
+<script>
+'use strict';
+const API='https://get-out-there-payments-live.getouttherefr.workers.dev';
+let token='',current=null,busy=false;
+const $=id=>document.getElementById(id);
+function status(message,kind=''){ $('status').textContent=message;$('status').className=kind; }
+function euro(c){return (Number(c)/100).toLocaleString('fr-FR',{style:'currency',currency:'EUR'});}
+function text(tag,value,css){const el=document.createElement(tag);el.textContent=String(value??'');if(css)el.className=css;return el;}
+function show(id,yes){$(id).classList.toggle('hidden',!yes);}
+async function call(path,method='GET',body){
+ if(!token)throw Error('Saisis ton jeton administrateur.');
+ const opts={method,headers:{'X-GOT-Admin-Token':token}};
+ if(body){opts.headers['Content-Type']='application/json';opts.body=JSON.stringify(body);}
+ const response=await fetch(API+path,opts);
+ const data=await response.json();
+ if(!response.ok)throw Error(data.error||'Erreur HTTP '+response.status);
+ return data;
+}
+function block(b){busy=b;for(const id of ['connect','openManual','cancel','resume'])$(id).disabled=b;}
+async function run(action){if(busy)return;block(true);status('Traitement en cours…');try{await action();if($('status').textContent==='Traitement en cours…')status('Opération terminée.','ok');}catch(e){status(e.message,'error');}finally{block(false);}}
+async function load(){const data=await call('/admin/list');show('bookingsPanel',true);const root=$('bookings');root.replaceChildren();
+ for(const b of data.bookings){const card=document.createElement('div');card.className='item';const left=document.createElement('div');left.append(text('strong',b.arrival+' → '+b.departure),document.createElement('br'),text('code',b.id),document.createElement('br'),text('span',b.status+(b.cancellation_state?' · Annulation : '+b.cancellation_state:''),'count'));const button=text('button','Ouvrir');button.className='secondary';button.onclick=()=>run(()=>open(b.id));card.append(left,button);root.append(card);}
+ if(!data.bookings.length)root.append(text('p','Aucune réservation Stripe.'));
+}
+async function open(id){const data=await call('/admin/preview?id='+encodeURIComponent(id));current=data;show('detailPanel',true);$('details').replaceChildren();const b=data.booking,p=data.payment,o=data.operation;const root=$('details');
+ for(const [k,v] of [['Séjour',b.arrival+' → '+b.departure],['Voyageur',p.name],['Email',p.email],['Voyageurs',p.adults+' adulte(s), '+p.children+' enfant(s), '+p.babies+' bébé(s)'],['Prix payé',euro(p.amount_cents)],['Statut D1',b.status],['Référence',b.id],['Session Stripe',p.session_id]]){const line=document.createElement('p');line.append(text('strong',k+' : '),text('span',v));root.append(line);}
+ if(o){root.append(text('p','Annulation : '+o.state+' ; remboursement '+euro(o.refund_cents)+' ; '+(o.refund_status||'sans remboursement'),'warning'));if(o.last_error)root.append(text('p','Dernier incident : '+o.last_error,'error'));}
+ $('confirmId').value='';$('reason').value='';$('partial').value='';$('mode').value='full';show('partialBox',false);
+ show('cancelForm',b.status==='CONFIRMED' && !o);show('resumeBox',Boolean(o && (b.status==='CANCEL_PENDING'||(b.status==='CANCELLED' && (!o.admin_email_sent||!o.customer_email_sent)))));
+ $('detailPanel').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function refundCents(){const total=current.payment.amount_cents;const mode=$('mode').value;if(mode==='full')return total;if(mode==='none')return 0;
+ const input=$('partial').value.trim().replace(',','.');if(!/^\d+(?:\.\d{1,2})?$/.test(input))throw Error('Montant partiel invalide.');
+ const cents=Math.round(Number(input)*100);if(cents<=0||cents>=total)throw Error('Le remboursement partiel doit être supérieur à 0 et inférieur au prix payé.');return cents;}
+$('connect').onclick=()=>run(async()=>{token=$('token').value.trim();await load();$('token').value='';});
+$('forget').onclick=()=>{token='';current=null;$('token').value='';show('bookingsPanel',false);show('detailPanel',false);status('Jeton effacé de cette page.');};
+$('openManual').onclick=()=>run(()=>open($('manualId').value.trim()));
+$('mode').onchange=()=>show('partialBox',$('mode').value==='partial');
+$('cancel').onclick=()=>run(async()=>{
+ if(!current)throw Error('Sélectionne une réservation.');const id=current.booking.id,amount=refundCents(),mode=$('mode').value,reason=$('reason').value.trim();
+ if($('confirmId').value.trim()!==id||!reason)throw Error('Motif et confirmation exacte de l’identifiant requis.');
+ if(!confirm('CONFIRMER l’annulation du séjour '+current.booking.arrival+' → '+current.booking.departure+' avec remboursement de '+euro(amount)+' ?'))return;
+ if(!confirm('DERNIÈRE VALIDATION : Cette action est réelle et peut déclencher un remboursement Stripe. Continuer ?'))return;
+ const result=await call('/admin/cancel','POST',{bookingId:id,confirmBookingId:id,mode,reason,refundCents:amount});
+ await open(id);if(!result.cancelled)throw Error(result.message+' '+(result.detail||''));
+ status('Annulation terminée. Remboursement : '+euro(result.refundCents)+'. Notifications : '+JSON.stringify(result.notices),'ok');
+});
+$('resume').onclick=()=>run(async()=>{if(!current)throw Error('Réservation introuvable');const id=current.booking.id;
+ if(!confirm('Reprendre l’opération précédente sur '+id+' ? Aucun nouveau remboursement ne sera créé.'))return;
+ const result=await call('/admin/resume','POST',{bookingId:id});await open(id);
+ if(!result.cancelled)throw Error(result.message+' '+(result.detail||''));
+ status('Annulation finalisée. Notifications : '+JSON.stringify(result.notices),'ok');
+});
+window.addEventListener('pagehide',()=>{token='';});
+</script></main></body></html>
