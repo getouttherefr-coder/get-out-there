@@ -1,35 +1,35 @@
-# GET OUT THERE — V1.2 multipages (site vitrine)
+# GET OUT THERE — V1.3 : vitrine + réservation + FAQ partageable
 
-## Installation directe sur `main`
-1. Télécharger et décompresser l'archive.
-2. Ouvrir https://github.com/getouttherefr-coder/get-out-there, branche **main**.
-3. Importer les **10 fichiers HTML à la racine**, en remplaçant `index.html` et les 3 fichiers juridiques existants. Conserver leurs noms exacts. Aucun sous-dossier supplémentaire.
-4. **Ne pas modifier `admin-gestion.html`, le Worker Cloudflare, D1, Stripe, Google Apps Script, ni le dossier `images/`**. Les photos du site sont réutilisées par leurs chemins existants.
-5. Attendre la coche verte du déploiement GitHub Pages dans **Actions**.
-6. Ouvrir `https://www.getoutthere.fr/`, puis cliquer sur chaque onglet, sur ordinateur et mobile. Vérifier que les 7 pages sont accessibles depuis le menu.
-7. Tester `/index.html#reservation` et le chargement du calendrier sur Chrome mobile. **Ne pas réaliser de paiement de test sans procédure prévue.** Le code fonctionnel de réservation/Stripe est inchangé.
-8. Tester `/acces.html`, `/arrivee-depart.html`, `/equipements.html`, `/faq.html`, `/alentours.html`, `/reglement-interieur.html` et les liens du pied de page.
+## Changements
 
-## Pages et URLs pour messages automatiques
-- Arrivée / itinéraire : `https://www.getoutthere.fr/acces.html`
-- Horaires et organisation : `https://www.getoutthere.fr/arrivee-depart.html`
-- Équipements : `https://www.getoutthere.fr/equipements.html`
-- Règlement intérieur : `https://www.getoutthere.fr/reglement-interieur.html`
-- FAQ : `https://www.getoutthere.fr/faq.html`
-- Autour du lodge : `https://www.getoutthere.fr/alentours.html`
-- Réservation : `https://www.getoutthere.fr/#reservation`
+- `index.html` : page vitrine sans calendrier ni bloc « Organiser votre séjour » ; garde présentation, concept, services, photos et avis en dernier, avec appels à réserver.
+- `reserver.html` (nouveau) : calendrier, simulateur, formulaire, CGV et paiement Stripe. Le script de réservation provient sans modification de `index.html` V1.2.
+- `faq.html` : toutes les questions et réponses, chacune avec un identifiant stable et un lien direct ; chargement d'un lien `#...` ouvre automatiquement sa réponse.
+- Les autres pages pratiques et juridiques sont conservées, accessibles via la FAQ et leurs URL historiques, mais le menu simplifié devient : Le lodge / Réserver / FAQ / Aux alentours.
 
-## Principes
-- Page d'accueil : lodge, concept et images réelles du domaine, prestations, photos, moteur de réservation, puis avis voyageurs tout en bas.
-- Rubriques d'assistance isolées sur des pages avec URLs pérennes et navigation horizontale défilable sur téléphone.
-- Données de sécurité inchangées : ne pas afficher publiquement les coordonnées personnelles d'accueil de Maud.
-- Autonomie et écologie : descriptions factuelles, sans certification environnementale non établie. Les trois visuels actuels sont des **photos réelles du lodge/étang**, réutilisées temporairement. Remplaçables par des fichiers `images/` au même emplacement ou en modifiant leur chemin HTML.
-- La photo `IMG_20261026_112313_957.jpg` (579×1032 pixels) n'est pas appelée dans la page d'accueil fournie. Si elle s'affiche mal sur le site actuel, vérifier quelle page la référence et éviter un affichage pleine largeur non adapté à sa faible définition.
+## Liens à communiquer
+- https://www.getoutthere.fr/faq.html#comment-se-rendre-au-lodge
+- https://www.getoutthere.fr/faq.html#comment-acceder-au-lodge
+- https://www.getoutthere.fr/faq.html#horaires-arrivee-depart
+- https://www.getoutthere.fr/faq.html#linge-fourni
+- https://www.getoutthere.fr/faq.html#chiens-autorises
+- https://www.getoutthere.fr/faq.html#peche-autorisee
+- https://www.getoutthere.fr/faq.html#services-additionnels
+- https://www.getoutthere.fr/reserver.html
 
-## Contrôles / limites
-- Vérifier physiquement la publication : aucune validation de déploiement LIVE n'est possible à partir de cette archive seule.
-- Le chemin `images/poele.jpg` qui déclenchait une erreur 404 a été remplacé dans la vitrine par `images/6C8A7677.jpg`, déjà présent sur le dépôt.
-- Le calendrier conserve l'intégration du site V1.1 révisé : le souci Chrome mobile n'est pas considéré comme résolu sans test.
-- Les pages juridiques réutilisent la version précédente, **sans médiateur identifié et avec des points RGPD/contrat restant à finaliser**. Les pages publiques ne deviennent pas automatiquement conformes du fait de cette refonte.
-- Les images de certains lieux alentour sont chargées depuis des sites externes ; leurs URLs peuvent changer. En cas de 404, remplacer par des images locales disposant des autorisations de réutilisation.
-- Aucun tarif, paramètre Stripe, route API ou statut de réservation n'est modifié ici.
+## Installation sur GitHub Pages (main)
+1. Sauvegarder le commit actuel en relevant son hash.
+2. Sur la branche `main` à la racine du dépôt `getouttherefr-coder/get-out-there`, importer les 11 HTML du ZIP en remplaçant ceux portant le même nom. **Ne pas supprimer `admin-gestion.html` ni le répertoire `images`.**
+3. Commit, puis attendre que GitHub Actions indique un déploiement terminé.
+4. Tester `/`, `/reserver.html`, `/faq.html#comment-acceder-au-lodge`, `/alentours.html`, puis sur Chrome mobile.
+5. Dans Réserver, charger le calendrier, sélectionner un séjour libre, contrôler le devis serveur, remplir le formulaire et aller jusqu'à l'écran Stripe. Ne pas payer un second test sans intention explicite.
+6. Vérifier le parcours d'annulation Stripe (retour `?payment=cancel`) qui doit montrer l'avis sur `/reserver.html`.
+7. Vérifier les boutons de la console admin ; elle et le Worker ne sont pas modifiés.
+
+## Points à valider
+- **Chiens et pêche** : aucune règle explicite confirmée ; FAQ conseille de demander l'accord de GET OUT THERE. Ne pas présenter comme autorisé sans validation.
+- **Calendrier mobile** : la séparation des pages ne garantit pas la correction d'une éventuelle panne réseau/Google Apps Script. Contrôler sur le téléphone réel.
+- **Paiement Stripe** : le code client est identique, mais les URL de retour côté Worker peuvent encore viser `/` (à vérifier sans changer le Worker). Le retour annulé depuis `/` est redirigé vers `/reserver.html`.
+- **Avis** : vérifier la permission de publication et l'exactitude des citations.
+- **Mentions légales** : médiateur encore à renseigner.
+- **Photographie IMG_20261026_112313_957** : vérifier l'asset image réel, non joint dans ce package.
