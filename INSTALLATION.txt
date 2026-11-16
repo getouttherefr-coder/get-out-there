@@ -1,0 +1,11 @@
+GET OUT THERE V1.4.1 — règles du séjour
+
+Sur GitHub, branche main, remplacer uniquement :
+- conditions-reservation.html
+- faq.html
+- reglement-interieur.html
+
+Ne pas toucher à index.html, reserver.html, au Worker, à Stripe ou à D1.
+Après Commit changes et publication, vérifier les trois URLs.
+
+IMPORTANT : pas de médiateur désigné à ce jour. L’obligation d’adhésion et de publication des coordonnées demeure ; la mention en attente est conservée dans les CGV. Les conditions d’annulation ou d’impossibilité d’exécution du prestataire et les droits légaux du client ne sont pas supprimés.
