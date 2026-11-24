@@ -479,7 +479,7 @@ footer:not(.site-footer) a{color:inherit}
     };
   }
   // Les tarifs comparatifs sont indicatifs, et ne participent jamais au paiement.
-  // Comparer chaque plateforme sur l'ensemble du séjour (sans mélanger les nuits), puis retenir la moins chère.
+  // Comparer chaque plateforme sur l'ensemble du séjour (sans mélanger les nuits), puis retenir la plus chère.
   function stayComparisonSaving(verified){
     if(!arrival||!departure||!verified||!Number.isSafeInteger(verified.accommodationCents)||!Number.isSafeInteger(verified.cleaningCents))return null;
     const totalByChannel={airbnb:0,greengo:0};
@@ -499,7 +499,7 @@ footer:not(.site-footer) a{color:inherit}
     if(directDisplayedCents!==verified.accommodationCents)return null;
     const candidates=Object.keys(complete).filter(channel=>complete[channel]);
     if(!candidates.length)return null;
-    const referenceCents=Math.min(...candidates.map(channel=>totalByChannel[channel]+verified.cleaningCents));
+    const referenceCents=Math.max(...candidates.map(channel=>totalByChannel[channel]+verified.cleaningCents));
     const directCents=verified.accommodationCents+verified.cleaningCents;
     return referenceCents>directCents?(referenceCents-directCents)/100:null;
   }
