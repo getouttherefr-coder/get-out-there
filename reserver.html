@@ -292,6 +292,12 @@ header.site-navigation nav[aria-label="Navigation principale"] .nav-cta[aria-cur
 /* Liens du bas sur fonds contrastés */
 .site-footer a,.site-footer .footer-links a,.site-footer .legal-links a,.got-page-footer a{color:#f7f4e8!important;text-decoration:underline;text-decoration-color:#b6a176;text-underline-offset:4px}
 footer:not(.site-footer) a{color:inherit}
+</style>
+<style id="got-direct-savings-style">
+.got-direct-saving{margin:14px auto 0;max-width:640px;padding:16px 18px;background:#e5f0e4;border:1px solid #bed3bf;border-radius:7px;color:#24553b;text-align:center;font-family:Arial,sans-serif}
+.got-direct-saving[hidden]{display:none}
+.got-direct-saving strong{display:block;font-size:17px;line-height:1.5}
+.got-direct-saving small{display:block;margin-top:7px;color:#526b59;font-size:12px;line-height:1.6}
 </style></head>
 <body>
 <header class="site-navigation"><a class="brand" href="index.html">GET OUT<br/>THERE</a><button aria-controls="primary-navigation" aria-expanded="false" id="mobile-nav-toggle" type="button">☰ Menu</button><nav aria-label="Navigation principale" id="primary-navigation"><a href="index.html">Le concept</a><a href="sejour.html">Description d’un séjour</a><a href="alentours.html">Les alentours</a><a aria-current="page" class="nav-cta" href="reserver.html">Réserver</a><a href="faq.html">FAQ</a></nav></header>
@@ -301,7 +307,7 @@ footer:not(.site-footer) a{color:inherit}
   'use strict';
   const API_URL='https://script.google.com/macros/s/AKfycbxJUDZ099G_BZ7lEzDiuFFGmRJ1XDRXPRN_luLhMA0iInQf7KvK-TWcx5m5jjtjUoPi/exec';
   const occupied=new Set();
-  let prices={}, cleaning=null, loaded=false, monthOffset=0, arrival=null, departure=null;
+  let prices={}, comparisonPrices={}, cleaning=null, loaded=false, monthOffset=0, arrival=null, departure=null;
   const now=new Date();
   const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
   const end=new Date(today);end.setDate(end.getDate()+365);
@@ -472,9 +478,43 @@ footer:not(.site-footer) a{color:inherit}
       welcomeLanguage:String(data.get('welcomeLanguage')||'')
     };
   }
+  // Les tarifs comparatifs sont indicatifs, et ne participent jamais au paiement.
+  // Comparer chaque plateforme sur l'ensemble du séjour (sans mélanger les nuits).
+  function stayComparisonSaving(verified){
+    if(!arrival||!departure||!verified||!Number.isSafeInteger(verified.accommodationCents)||!Number.isSafeInteger(verified.cleaningCents))return null;
+    const totalByChannel={airbnb:0,greengo:0};
+    const complete={airbnb:true,greengo:true};
+    let directDisplayedCents=0;
+    for(let d=new Date(arrival);d<departure;d=nextDay(d)){
+      const k=key(d),item=comparisonPrices[k];
+      if(!hasPrice(k))return null;
+      directDisplayedCents+=Math.round(prices[k]*100);
+      for(const channel of ['airbnb','greengo']){
+        const value=item&&item[channel];
+        if(typeof value!=='number'||!Number.isFinite(value)||value<0)complete[channel]=false;
+        else totalByChannel[channel]+=Math.round(value*100);
+      }
+    }
+    // Comparer uniquement si le prix direct affiché correspond au prix vérifié.
+    if(directDisplayedCents!==verified.accommodationCents)return null;
+    const candidates=Object.keys(complete).filter(channel=>complete[channel]);
+    if(!candidates.length)return null;
+    const referenceCents=Math.max(...candidates.map(channel=>totalByChannel[channel]+verified.cleaningCents));
+    const directCents=verified.accommodationCents+verified.cleaningCents;
+    return referenceCents>directCents?(referenceCents-directCents)/100:null;
+  }
+  const savingBox=document.createElement('div');
+  savingBox.className='got-direct-saving';
+  savingBox.hidden=true;
+  const savingText=document.createElement('strong');
+  const savingNote=document.createElement('small');
+  savingNote.textContent='Comparaison indicative avec le tarif renseigné pour un séjour équivalent sur une plateforme de réservation, ménage inclus, hors promotions et éventuels frais supplémentaires. Le prix définitif est celui vérifié ci-dessus.';
+  savingBox.append(savingText,savingNote);
+  serverQuote.after(savingBox);
   async function verifyServerQuote(){
     const sequence=++quoteSequence;
     verifiedQuote=null;
+    savingBox.hidden=true;
     if(!loaded||!arrival||!departure||!canDepart(departure)){
       serverQuote.textContent='';return;
     }
@@ -488,6 +528,8 @@ footer:not(.site-footer) a{color:inherit}
       serverQuote.textContent='Tarif vérifié : '+money(q.totalCents/100)+' TTC · Hébergement '+money(q.accommodationCents/100)+' · Ménage '+money(q.cleaningCents/100)+' · Taxe de séjour '+money(q.touristTaxCents/100)+' · Options '+money((q.breakfastCents+q.aperitifCents)/100);
       const total=document.querySelector('.quote-total');
       if(total)total.textContent=money(q.totalCents/100);
+      const saving=stayComparisonSaving(q);
+      if(saving!==null){savingText.textContent='Économie en réservant en direct : − '+money(saving);savingBox.hidden=false;}
     }catch(error){
       if(sequence!==quoteSequence)return;
       serverQuote.textContent='Vérification impossible : '+error.message;
@@ -543,7 +585,7 @@ footer:not(.site-footer) a{color:inherit}
       quote.textContent='Le simulateur est temporairement indisponible.';return;
     }
     data.nuitsOccupees.forEach(v=>{if(typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v))occupied.add(v);});
-    prices=data.tarifs;cleaning=data.fraisMenage;loaded=true;
+    prices=data.tarifs;comparisonPrices=data.tarifsComparaison&&typeof data.tarifsComparaison==='object'&&!Array.isArray(data.tarifsComparaison)?data.tarifsComparaison:{};cleaning=data.fraisMenage;loaded=true;
     status.textContent='Calendrier mis à jour régulièrement · disponibilités à confirmer';
     render();renderQuote();
   };
